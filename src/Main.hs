@@ -1,11 +1,10 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 
 import Development.Stroll
+import Development.Stroll.Hash
 
-import Crypto.Hash
 import qualified Data.Map as Map
 import System.Exit
-import Data.ByteString
 import Data.Yaml
 
 -- Compiling hello world:
@@ -34,10 +33,10 @@ The current model allows only four operations for the sake of simplicity.
 main :: IO ()
 main = do
     -- run "default" "link.bat"
-    let h     = hash ("123" :: ByteString)
+    let h     = hash "123"
         trace = Trace h
                       ExitSuccess
-                      (Map.fromList [("qwe", Delete), ("xru", Read h)])
+                      (Map.fromList [("qwe", Write Nothing), ("xru", Read (Just h))])
                       ""
                       ""
     encodeFile "test.stroll" trace
