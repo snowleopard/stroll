@@ -3,11 +3,17 @@
 module Development.Stroll where
 
 import Development.Stroll.Base
+import Development.Stroll.Trace
 
+import Data.ByteString (ByteString)
 import Development.Shake.Command
 import System.FilePath
 
 import qualified Data.Set as Set
+
+data ExecutionResult = ExecutionResult { trace  :: Trace
+                                       , stdout :: ByteString
+                                       , stderr :: ByteString }
 
 -- | Run a specified script, updating the corresponding @.stroll@ file.
 run :: FilePath -> Script -> IO ()

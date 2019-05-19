@@ -5,7 +5,6 @@ module Development.Stroll.Trace where
 import Development.Stroll.Base
 import Development.Stroll.Hash
 
-import Data.ByteString (ByteString)
 import Data.Text (pack)
 import Data.Map (Map)
 import Data.Yaml
@@ -43,9 +42,7 @@ The current model allows only two basic operations for the sake of simplicity.
 -- After a 'Script' is executed, we record the following trace
 data Trace = Trace { scriptHash :: Hash
                    , exitCode   :: ExitCode
-                   , operations :: Operations
-                   , stdout     :: ByteString
-                   , stderr     :: ByteString }
+                   , operations :: Operations }
 
 instance ToJSON Trace where
     toJSON Trace{..} = object

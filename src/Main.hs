@@ -37,7 +37,5 @@ main = do
         trace = Trace h
                       ExitSuccess
                       (Map.fromList [("qwe", Write Nothing), ("xru", Read (Just h))])
-                      ""
-                      ""
     encodeFile "test.stroll" trace
 
