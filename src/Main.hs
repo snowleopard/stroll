@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 
-import Development.Stroll
 import Development.Stroll.Hash
+import Development.Stroll.Trace
 
 import qualified Data.Map as Map
 import System.Exit
