@@ -1,6 +1,13 @@
+# Stroll related
+*.stroll
+*.stdout
+*.stderr
+
+# Generic
 dist
 dist-*
 cabal-dev
+*.exe
 *.o
 *.hi
 *.chi
