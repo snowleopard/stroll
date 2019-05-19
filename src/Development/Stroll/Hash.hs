@@ -8,7 +8,7 @@ import Data.Text.Encoding
 import Data.Yaml
 import System.Directory
 
-import qualified Data.ByteString as ByteString
+import qualified Data.ByteString as B
 
 -- | A SHA-256 hash used for efficient comparison and indexing of file contents.
 newtype Hash = Hash { getHash :: Crypto.Digest Crypto.SHA256 }
@@ -39,7 +39,7 @@ hash = Hash . Crypto.hash
 hashFile :: FilePath -> IO (Maybe Hash)
 hashFile file = do
     exists <- doesFileExist file
-    if exists then Just . hash <$> ByteString.readFile file
+    if exists then Just . hash <$> B.readFile file
               else return Nothing
 
 -- | Pretty-print a 'Hash' as a base-16 encoded 'ByteString'.

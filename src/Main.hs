@@ -1,11 +1,8 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 
-import Development.Stroll.Hash
-import Development.Stroll.Trace
-
-import qualified Data.Map as Map
-import System.Exit
-import Data.Yaml
+import Data.Functor
+import Development.Stroll.Script
+import System.Environment
 
 -- Compiling hello world:
 -- reads: 1031
@@ -13,33 +10,10 @@ import Data.Yaml
 -- deletes: 18
 -- Set size : 431
 
-{- [Note: Operations and Info]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When Stroll executes a script, the file-system operations performed by the
-script are recorded.
-
-The current model allows only four operations for the sake of simplicity.
-
--- * Reading multiple times is OK, we assume all reads resulted in the same value
--- * Writing multiple times is OK, we only remember the latest value
--- Reading and writing the same key is called "modification", tracking the
--- latest written
-
--}
-
-
-
 main :: IO ()
 main = do
-    -- run "default" "link.bat"
-    let h     = hash "123"
-        trace = Trace "foo/bar.bat"
-                      h
-                      ExitSuccess
-                      (Map.fromList [("qwe", Write Nothing), ("xru", Read (Just h))])
-    -- encodeFile "test.stroll" trace
-    res <- decodeFileEither "test.stroll"
-    putStrLn (show (res :: Either ParseException Trace))
-
+    args <- getArgs
+    case args of
+        (file:_) -> void (execute file)
+        _ -> putStrLn "Please specify a directory to stroll"
 

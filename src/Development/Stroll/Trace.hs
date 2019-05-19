@@ -1,8 +1,6 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ScopedTypeVariables #-}
-
+{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 module Development.Stroll.Trace where
 
-import Development.Stroll.Base
 import Development.Stroll.Hash
 
 import Control.Selective (allS)
@@ -19,15 +17,15 @@ import qualified Data.Map            as Map
 
 The current model allows only two basic operations for the sake of simplicity.
 
-* 'Read' corresponds to reading a 'Key'. Reading the same 'Key' multiple times
-  is allowed, and we assume that all such reads yield the same value, whose
-  'Hash' is recorded. We record 'Nothing' if the 'Key' does not exist.
+* 'Read' corresponds to reading from a file. Reading from the same file multiple
+  times is allowed, and we assume that all such reads yield the same value,
+  whose 'Hash' is recorded. We record 'Nothing' if the file does not exist.
 
-* 'Write' corresponds to writing a 'Key'. Writing the same 'Key' multiple times
-  is allowed, and we record the 'Hash' of the latest written value. If we both
-  read and write a 'Key', we consider this a 'Write' operation. We record
-  'Nothing' if the script /deletes/ the 'Key': typical examples are temporary
-  files, as well as build artefacts deleted by a "cleaning" script.
+* 'Write' corresponds to writing to a file. Writing to the same file multiple
+  times is allowed, and we record the 'Hash' of the latest written value. If we
+  both read from and write to the same file, we consider this a 'Write'
+  operation. We record 'Nothing' if the script /deletes/ the file: typical
+  examples are temporary files, and build artefacts deleted by clean up scripts.
 
 -}
 data Operation = Read  (Maybe Hash)
@@ -55,7 +53,7 @@ instance FromJSON Operation where
 data Trace = Trace { scriptPath :: FilePath
                    , scriptHash :: Hash
                    , exitCode   :: ExitCode
-                   , operations :: Map Key Operation }
+                   , operations :: Map FilePath Operation }
     deriving Show
 
 instance ToJSON Trace where
@@ -77,18 +75,18 @@ instance FromJSON Trace where
             Nothing  -> fail ("Cannot parse exit code " ++ show text)
             Just res -> return res
 
--- | Given a build 'Trace', and a function to compute the 'Hash' of a key's
--- value (or 'Nothing' if the key does not exist), return 'True' if the trace is
--- /up-to-date/, that is:
+-- | Given a build 'Trace', and a function to compute the 'Hash' of a file
+-- contents (or 'Nothing' if the file does not exist), return 'True' if the
+-- trace is /up-to-date/, that is:
 --
 -- * The build script that was used to produce the trace is unchanged.
 --
--- * All keys recorded in the trace have expected values.
-upToDate :: Trace -> (Key -> IO (Maybe Hash)) -> IO Bool
+-- * The current contents of all files in the trace matches the recorded hashes.
+upToDate :: Trace -> (FilePath -> IO (Maybe Hash)) -> IO Bool
 upToDate Trace{..} fetchHash =
     allS match ((scriptPath, Read (Just scriptHash)) : Map.toList operations)
   where
-    match :: (Key, Operation) -> IO Bool
-    match (key, operation) = (== value) <$> fetchHash key
+    match :: (FilePath, Operation) -> IO Bool
+    match (file, operation) = (== value) <$> fetchHash file
       where
         value = case operation of { Read v -> v; Write v -> v }
