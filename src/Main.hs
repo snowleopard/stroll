@@ -34,8 +34,12 @@ main :: IO ()
 main = do
     -- run "default" "link.bat"
     let h     = hash "123"
-        trace = Trace h
+        trace = Trace "foo/bar.bat"
+                      h
                       ExitSuccess
                       (Map.fromList [("qwe", Write Nothing), ("xru", Read (Just h))])
-    encodeFile "test.stroll" trace
+    -- encodeFile "test.stroll" trace
+    res <- decodeFileEither "test.stroll"
+    putStrLn (show (res :: Either ParseException Trace))
+
 

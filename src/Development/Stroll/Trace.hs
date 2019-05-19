@@ -5,25 +5,17 @@ module Development.Stroll.Trace where
 import Development.Stroll.Base
 import Development.Stroll.Hash
 
-import Data.Text (pack)
+import Control.Selective (allS)
 import Data.Map (Map)
+import Data.Text (Text, pack, unpack)
 import Data.Yaml
 import System.Exit
+import Text.Read
 
--- See [Note: Operations]
-data Operation = Read  (Maybe Hash)
-               | Write (Maybe Hash)
+import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Map            as Map
 
-instance ToJSON Operation where
-    toJSON (Read  contents) = object ["read"  .= toJSON (toText <$> contents)]
-    toJSON (Write contents) = object ["write" .= toJSON (toText <$> contents)]
-
-type Operations = Map Key Operation
-
-{- [Note: Operations]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Stroll records file-system operations performed while executing a script.
+{-| Stroll records file-system operations performed while executing a script.
 
 The current model allows only two basic operations for the sake of simplicity.
 
@@ -38,14 +30,65 @@ The current model allows only two basic operations for the sake of simplicity.
   files, as well as build artefacts deleted by a "cleaning" script.
 
 -}
+data Operation = Read  (Maybe Hash)
+               | Write (Maybe Hash)
+    deriving (Eq, Show)
 
--- After a 'Script' is executed, we record the following trace
-data Trace = Trace { scriptHash :: Hash
+instance ToJSON Operation where
+    toJSON (Read  contents) = object ["read"  .= toJSON (toText <$> contents)]
+    toJSON (Write contents) = object ["write" .= toJSON (toText <$> contents)]
+
+instance FromJSON Operation where
+    parseJSON = withObject "Operation" $ \o ->
+        if HashMap.size o /= 1
+        then fail "Exactly one operation expected"
+        else case HashMap.lookup "read" o of
+            Just value -> Read <$> parseJSON value
+            Nothing    -> case HashMap.lookup "write" o of
+                Just value -> Write <$> parseJSON value
+                Nothing    -> fail "Unknown operation"
+
+-- | A 'Trace' is recorded after executing a build 'Script'. Thanks to the
+-- 'FromJSON' and 'ToJSON' instances, you can easily serialise and deserialise
+-- traces. For example, see 'encodeFile' and 'decodeFileEither' for storing
+-- traces in YAML files.
+data Trace = Trace { scriptPath :: FilePath
+                   , scriptHash :: Hash
                    , exitCode   :: ExitCode
-                   , operations :: Operations }
+                   , operations :: Map Key Operation }
+    deriving Show
 
 instance ToJSON Trace where
     toJSON Trace{..} = object
-        [ "script-hash" .= toText scriptHash
+        [ "script-path" .= pack scriptPath
+        , "script-hash" .= scriptHash
         , "exit-code"   .= pack (show exitCode)
         , "operations"  .= operations ]
+
+instance FromJSON Trace where
+    parseJSON = withObject "Trace" $ \o -> Trace
+        <$>  o .: "script-path"
+        <*>  o .: "script-hash"
+        <*> (o .: "exit-code" >>= parseExitCode)
+        <*>  o .: "operations"
+      where
+        parseExitCode :: Text -> Parser ExitCode
+        parseExitCode text = case readMaybe (unpack text) of
+            Nothing  -> fail ("Cannot parse exit code " ++ show text)
+            Just res -> return res
+
+-- | Given a build 'Trace', and a function to compute the 'Hash' of a key's
+-- value (or 'Nothing' if the key does not exist), return 'True' if the trace is
+-- /up-to-date/, that is:
+--
+-- * The build script that was used to produce the trace is unchanged.
+--
+-- * All keys recorded in the trace have expected values.
+upToDate :: Trace -> (Key -> IO (Maybe Hash)) -> IO Bool
+upToDate Trace{..} fetchHash =
+    allS match ((scriptPath, Read (Just scriptHash)) : Map.toList operations)
+  where
+    match :: (Key, Operation) -> IO Bool
+    match (key, operation) = (== value) <$> fetchHash key
+      where
+        value = case operation of { Read v -> v; Write v -> v }
