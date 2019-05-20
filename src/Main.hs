@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 
-import Data.Functor
-import Development.Stroll.Script
+import Development.Stroll
 import System.Environment
 
 -- Compiling hello world:
@@ -14,6 +13,6 @@ main :: IO ()
 main = do
     args <- getArgs
     case args of
-        (file:_) -> void (execute file)
+        (dir:_) -> stroll dir
         _ -> putStrLn "Please specify a directory to stroll"
 
