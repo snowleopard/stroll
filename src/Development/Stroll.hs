@@ -1,6 +1,8 @@
+{-# LANGUAGE TupleSections #-}
 module Development.Stroll where
 
 import Control.Monad
+import Data.Bool
 import Data.Yaml
 import Development.Shake hiding (doesFileExist)
 import Development.Shake.FilePath
@@ -8,6 +10,7 @@ import Development.Stroll.Hash
 import Development.Stroll.Script
 import Development.Stroll.Trace
 import System.Directory
+import System.Exit
 
 import qualified Data.ByteString as B
 
@@ -19,25 +22,35 @@ getScripts dir = do
     notStroll :: FilePath -> Bool
     notStroll f = takeExtension f `notElem` [".stroll", ".stdout", ".stderr"]
 
-stroll :: FilePath -> IO ()
-stroll dir = do
-    scripts <- getScripts dir
-    todo    <- filterM outOfDate scripts
-    case todo of
-        (script:_) -> do
-            putStrLn ("Executing " ++ script ++ "...")
-            void (execute script)
-            stroll dir
-        _ -> putStrLn "Done"
+data Status = UpToDate | OutOfDate | Error deriving Eq
 
-outOfDate :: Script -> IO Bool
-outOfDate script = do
+status :: Script -> IO Status
+status script = do
     let stroll = script <.> "stroll"
     exists <- doesFileExist stroll
     if exists
     then do
         trace <- B.readFile stroll
         case decodeEither' trace of
-            Left err -> error (show err)
-            Right t  -> not <$> upToDate t hashFile
-    else return True
+            Left err -> error (show err) -- Maybe return 'OutOfDate'?
+            Right t  -> do
+                if exitCode t == ExitSuccess
+                then bool OutOfDate UpToDate <$> upToDate t hashFile
+                else bool OutOfDate Error    <$> upToDate t hashFile
+    else return OutOfDate
+
+stroll :: FilePath -> IO ()
+stroll dir = do
+    scripts   <- getScripts dir
+    statuses  <- sequence [ (s,) <$> status s | s <- scripts ]
+    let outOfDate = filter ((==OutOfDate) . snd) statuses
+    case outOfDate of
+        ((script,_):_) -> do
+            putStrLn ("Executing " ++ script ++ "...")
+            void (execute script)
+            stroll dir
+        _ -> do
+            let failed = filter ((==Error) . snd) statuses
+            forM_ failed $ \(script,_) ->
+                putStrLn ("Script " ++ script ++ " has failed.")
+            putStrLn "Done"
