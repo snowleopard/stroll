@@ -5,7 +5,14 @@ require the user to specify any dependencies between individual build tasks.
 
 ## How to try
 
-First, build and install Stroll, e.g. using Stack:
+Install `fsatrace`:
+
+```bash
+git clone git@github.com:ndmitchell/fsatrace.git
+make install
+```
+
+Then build and install Stroll, e.g. using Stack:
 
 ```bash
 stack install
@@ -18,7 +25,7 @@ cd examples/windwows # or examples/linux
 stroll build
 Executing build\compile.bat...
 Executing build\link.bat...
-Done 
+Done
 ```
 
 Stroll will create `.stroll` files when executing build scripts. For example, the file
