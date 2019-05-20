@@ -1,4 +1,4 @@
 #!/bin/bash
 
 rm -rf obj
-rmdir obj
+rm -rf exe
