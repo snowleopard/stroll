@@ -11,7 +11,11 @@ First, build and install Stroll, e.g. using Stack:
 stack install
 ```
 
-Then try the included example:
+Stroll uses the [`fsatrace` utility](https://github.com/jacereda/fsatrace) for
+tracking file-system operations when executing build tasks. You therefore need
+to have `fsatrace` on your `PATH`.
+
+Now you can try the included example:
 
 ```bash
 cd examples/windwows # or examples/linux
