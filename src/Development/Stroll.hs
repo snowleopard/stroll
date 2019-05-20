@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ScopedTypeVariables #-}
-
 module Development.Stroll where
 
 import Control.Monad
@@ -22,7 +20,7 @@ stroll dir = do
     todo    <- filterM outOfDate scripts
     case todo of
         (script:_) -> do
-            putStrLn ("Executing " ++ script)
+            putStrLn ("Executing " ++ script ++ "...")
             void (execute script)
             stroll dir
         _ -> putStrLn "Done"
