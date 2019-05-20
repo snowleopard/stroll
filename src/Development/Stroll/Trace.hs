@@ -3,7 +3,7 @@ module Development.Stroll.Trace where
 
 import Development.Stroll.Hash
 
-import Control.Selective (allS)
+import Control.Selective (allS, (<&&>))
 import Data.Map (Map)
 import Data.Text (Text, pack, unpack)
 import Data.Yaml
@@ -75,9 +75,12 @@ instance FromJSON Trace where
 --
 -- * The build script that was used to produce the trace is unchanged.
 --
+-- * The build script has previously completed successfully.
+--
 -- * The current contents of all files in the trace matches the recorded hashes.
 upToDate :: Trace -> (FilePath -> IO (Maybe Hash)) -> IO Bool
-upToDate Trace{..} fetchHash = allS match (Map.toList operations)
+upToDate Trace{..} fetchHash = pure (exitCode == ExitSuccess) <&&>
+    allS match (Map.toList operations)
   where
     match :: (FilePath, Operation) -> IO Bool
     match (file, operation) = (== value) <$> fetchHash file
