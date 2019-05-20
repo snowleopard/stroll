@@ -2,10 +2,10 @@
 module Development.Stroll.Script (Script, execute) where
 
 import Control.Selective
+import Control.Monad
 import Data.ByteString (ByteString)
 import Data.List
 import Data.Map (Map)
-import Data.Maybe
 import Data.Yaml
 import Development.Shake.Command
 import Development.Shake.FilePath
@@ -24,15 +24,17 @@ type Script = FilePath
 -- * Write the trace to the @.stroll@ file.
 -- * If there is any standard output, write it to the @.stdout@ file.
 -- * If there is any standard error output, write it to the @.stderr@ file.
+--
+-- Fails with an error if the given script does not exist.
 execute :: Script -> IO Trace
 execute script = do
-    maybeHash <- hashFile script
-    let scriptHash = fromMaybe (error ("Script not found: " ++ script)) maybeHash
-    (Exit code, StdoutTrim out, Stderr err, fsatraces :: [FSATrace]) <- cmd script
+    exists <- doesFileExist script
+    unless exists $ error ("Script not found: " ++ script)
+    (Exit code, StdoutTrim out, Stderr err, fsatraces) <- cmd Shell script
     cwd <- getCurrentDirectory
     ops <- Map.traverseWithKey updateHash (decodeFSATraces cwd fsatraces)
-    let trace = Trace script scriptHash code ops
-    encodeFile (script <.> "stroll") trace
+    let trace = Trace code ops
+    B.writeFile (script <.> "stroll") (encode trace)
     updateFile (script <.> "stdout") out
     updateFile (script <.> "stderr") err
     return trace

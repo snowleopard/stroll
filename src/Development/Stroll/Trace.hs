@@ -50,24 +50,18 @@ instance FromJSON Operation where
 -- 'FromJSON' and 'ToJSON' instances, you can easily serialise and deserialise
 -- traces. For example, see 'encodeFile' and 'decodeFileEither' for storing
 -- traces in YAML files.
-data Trace = Trace { scriptPath :: FilePath
-                   , scriptHash :: Hash
-                   , exitCode   :: ExitCode
+data Trace = Trace { exitCode   :: ExitCode
                    , operations :: Map FilePath Operation }
     deriving Show
 
 instance ToJSON Trace where
     toJSON Trace{..} = object
-        [ "script-path" .= pack scriptPath
-        , "script-hash" .= scriptHash
-        , "exit-code"   .= pack (show exitCode)
+        [ "exit-code"   .= pack (show exitCode)
         , "operations"  .= operations ]
 
 instance FromJSON Trace where
     parseJSON = withObject "Trace" $ \o -> Trace
-        <$>  o .: "script-path"
-        <*>  o .: "script-hash"
-        <*> (o .: "exit-code" >>= parseExitCode)
+        <$> (o .: "exit-code" >>= parseExitCode)
         <*>  o .: "operations"
       where
         parseExitCode :: Text -> Parser ExitCode
@@ -83,8 +77,7 @@ instance FromJSON Trace where
 --
 -- * The current contents of all files in the trace matches the recorded hashes.
 upToDate :: Trace -> (FilePath -> IO (Maybe Hash)) -> IO Bool
-upToDate Trace{..} fetchHash =
-    allS match ((scriptPath, Read (Just scriptHash)) : Map.toList operations)
+upToDate Trace{..} fetchHash = allS match (Map.toList operations)
   where
     match :: (FilePath, Operation) -> IO Bool
     match (file, operation) = (== value) <$> fetchHash file
