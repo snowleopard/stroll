@@ -5,14 +5,7 @@ require the user to specify any dependencies between individual build tasks.
 
 ## How to try
 
-Install `fsatrace`:
-
-```bash
-git clone git@github.com:ndmitchell/fsatrace.git
-make install
-```
-
-Then build and install Stroll, e.g. using Stack:
+First, build and install Stroll, e.g. using Stack:
 
 ```bash
 stack install
