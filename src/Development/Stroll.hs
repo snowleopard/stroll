@@ -12,7 +12,12 @@ import System.Directory
 import qualified Data.ByteString as B
 
 getScripts :: FilePath -> IO [Script]
-getScripts dir = getDirectoryFilesIO "" [dir <//> "*"]
+getScripts dir = do
+    files <- getDirectoryFilesIO "" [dir <//> "*"]
+    return (filter notStroll files)
+  where
+    notStroll :: FilePath -> Bool
+    notStroll f = takeExtension f `notElem` [".stroll", ".stdout", ".stderr"]
 
 stroll :: FilePath -> IO ()
 stroll dir = do
@@ -35,4 +40,4 @@ outOfDate script = do
         case decodeEither' trace of
             Left err -> error (show err)
             Right t  -> not <$> upToDate t hashFile
-    else return False
+    else return True
