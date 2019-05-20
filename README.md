@@ -14,10 +14,10 @@ stack install
 Then try the included example:
 
 ```bash
-$ cd examples/windwows # or examples/linux
-$ stroll build
-Executing build\compile.bat
-Executing build\link.bat
+cd examples/windwows # or examples/linux
+stroll build
+Executing build\compile.bat...
+Executing build\link.bat...
 Done 
 ```
 
