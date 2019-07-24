@@ -1,4 +1,5 @@
 #!/bin/bash
 
-rm -rf obj
-rm -rf exe
+rm bin/Main.hi
+rm bin/Main.o
+rm bin/HelloWorld
