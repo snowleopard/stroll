@@ -28,9 +28,9 @@ The current model allows only two basic operations for the sake of simplicity.
   examples are temporary files, and build artefacts deleted by clean up scripts.
 
 -}
-data Operation = Read  (Maybe Hash)
-               | Write (Maybe Hash)
-    deriving (Eq, Show)
+data Operation = Read (Maybe Hash) | Write (Maybe Hash) deriving (Eq, Show)
+
+type Operations = Map FilePath Operation
 
 instance ToJSON Operation where
     toJSON (Read  contents) = object ["read"  .= toJSON (toText <$> contents)]
@@ -50,14 +50,13 @@ instance FromJSON Operation where
 -- 'FromJSON' and 'ToJSON' instances, you can easily serialise and deserialise
 -- traces. For example, see 'encodeFile' and 'decodeFileEither' for storing
 -- traces in YAML files.
-data Trace = Trace { exitCode   :: ExitCode
-                   , operations :: Map FilePath Operation }
+data Trace = Trace { exitCode :: ExitCode, operations :: Operations }
     deriving Show
 
 instance ToJSON Trace where
     toJSON Trace{..} = object
-        [ "exit-code"   .= pack (show exitCode)
-        , "operations"  .= operations ]
+        [ "exit-code"  .= pack (show exitCode)
+        , "operations" .= operations ]
 
 instance FromJSON Trace where
     parseJSON = withObject "Trace" $ \o -> Trace
@@ -71,11 +70,8 @@ instance FromJSON Trace where
 
 -- | Given a build 'Trace', and a function to compute the 'Hash' of a file
 -- contents (or 'Nothing' if the file does not exist), return 'True' if the
--- trace is /up-to-date/, that is:
---
--- * The build script that was used to produce the trace is unchanged.
---
--- * The current contents of all files in the trace matches the recorded hashes.
+-- trace is /up-to-date/, that is, the contents of all files in the trace
+-- matches the recorded hashes.
 upToDate :: Trace -> (FilePath -> IO (Maybe Hash)) -> IO Bool
 upToDate Trace{..} fetchHash = allS match (Map.toList operations)
   where

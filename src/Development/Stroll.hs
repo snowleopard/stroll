@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 module Development.Stroll where
 
 import Control.Monad
@@ -28,16 +27,13 @@ status :: Script -> IO Status
 status script = do
     let stroll = script <.> "stroll"
     exists <- doesFileExist stroll
-    if exists
-    then do
+    if not exists then return OutOfDate else do
         trace <- B.readFile stroll
         case decodeEither' trace of
             Left err -> error (show err) -- Maybe return 'OutOfDate'?
-            Right t  -> do
-                if exitCode t == ExitSuccess
-                then bool OutOfDate UpToDate <$> upToDate t hashFile
-                else bool OutOfDate Error    <$> upToDate t hashFile
-    else return OutOfDate
+            Right t  -> bool OutOfDate result <$> upToDate t hashFile
+              where
+                result = if exitCode t == ExitSuccess then UpToDate else Error
 
 stroll :: FilePath -> IO ()
 stroll dir = do

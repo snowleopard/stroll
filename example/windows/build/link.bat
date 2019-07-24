@@ -1,2 +1,1 @@
-mkdir exe
-ghc obj\Main.o -o exe\HelloWorld.exe
+ghc bin\Main.o -o bin\HelloWorld.exe

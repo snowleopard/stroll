@@ -1,5 +1,4 @@
 packages:
 - '.'
-resolver: lts-13.21
-extra-deps:
-- selective-0.2
+resolver: nightly-2019-07-23
+

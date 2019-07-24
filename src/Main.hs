@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
-
 import Development.Stroll
 import System.Environment
 
