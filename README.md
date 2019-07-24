@@ -18,7 +18,7 @@ to have `fsatrace` on your `PATH`.
 Now you can try the included example:
 
 ```bash
-cd examples/windwows # or examples/linux
+cd examples/windows # or examples/linux
 stroll build
 Executing build\compile.bat...
 Executing build\link.bat...

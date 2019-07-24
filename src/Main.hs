@@ -1,4 +1,6 @@
+import Data.Functor
 import Development.Stroll
+import System.Directory
 import System.Environment
 
 -- Compiling hello world:
@@ -11,6 +13,9 @@ main :: IO ()
 main = do
     args <- getArgs
     case args of
-        (dir:_) -> stroll dir
+        ("-i":dir :_) -> info  dir
+        ("-g":dir :_) -> graph dir
+        ("-r":dir :_) -> reset dir
+        (     task:_) -> do isDir <- doesDirectoryExist task
+                            if isDir then stroll task else void (execute task)
         _ -> putStrLn "Please specify a directory to stroll"
-

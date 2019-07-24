@@ -63,7 +63,7 @@ decodeFSATraces dir = foldrM decode Map.empty
         return $ if isDir 
             then ops -- We currently ignore directories
             else case relativise dir file of
-                Nothing   -> ops -- Skip files outside the root directory
+                Nothing   -> ops -- Ignore files outside the root directory
                 Just path -> case Map.lookup path ops of
                     Just (Write _) -> ops -- A Write cannot turn into a Read
                     _              -> Map.insert path (c Nothing) ops
