@@ -3,6 +3,7 @@ module Development.Stroll.Script (Script, execute) where
 import Control.Selective
 import Control.Monad
 import Data.ByteString (ByteString)
+import Data.Foldable (foldrM)
 import Data.List
 import Data.Yaml
 import Development.Shake.Command
@@ -30,7 +31,7 @@ execute script = do
     unless exists $ error ("Script not found: " ++ script)
     (Exit code, StdoutTrim out, Stderr err, fsatraces) <- cmd Shell script
     cwd <- getCurrentDirectory
-    ops <- Map.traverseWithKey updateHash (decodeFSATraces cwd fsatraces)
+    ops <- Map.traverseWithKey updateHash =<< decodeFSATraces cwd fsatraces
     let trace = Trace code ops
     B.writeFile (script <.> "stroll") (encode trace)
     updateFile  (script <.> "stdout") out
@@ -45,10 +46,10 @@ execute script = do
         | B.null contents = whenS (doesFileExist file) (removeFile file)
         | otherwise       = B.writeFile file contents
 
-decodeFSATraces :: FilePath -> [FSATrace] -> Operations
-decodeFSATraces dir = foldr decode Map.empty
+decodeFSATraces :: FilePath -> [FSATrace] -> IO Operations
+decodeFSATraces dir = foldrM decode Map.empty
   where
-    decode :: FSATrace -> Operations -> Operations
+    decode :: FSATrace -> Operations -> IO Operations
     decode t = case t of
         FSARead   f -> add Read  f
         FSAQuery  f -> add Read  f
@@ -56,12 +57,15 @@ decodeFSATraces dir = foldr decode Map.empty
         FSADelete f -> add Write f
         FSATouch  f -> add Write f
         FSAMove d s -> error ("Moving files not supported: " ++ s ++ " => " ++ d)
-    add :: (Maybe Hash -> Operation) -> FilePath -> Operations -> Operations
-    add c file ops = case relativise dir file of
-        Nothing   -> ops -- Skip files outside the root directory
-        Just path -> case Map.lookup path ops of
-            Just (Write _) -> ops -- Write's are final
-            _              -> Map.insert path (c Nothing) ops
+    add :: (Maybe Hash -> Operation) -> FilePath -> Operations -> IO Operations
+    add c file ops = do
+        isDir <- doesDirectoryExist file
+        return $ if isDir 
+            then ops -- We currently ignore directories
+            else case relativise dir file of
+                Nothing   -> ops -- Skip files outside the root directory
+                Just path -> case Map.lookup path ops of
+                    Just (Write _) -> ops -- A Write cannot turn into a Read
+                    _              -> Map.insert path (c Nothing) ops
     relativise :: FilePath -> FilePath -> Maybe FilePath
-    relativise dir file | null (takeFileName file) = Nothing -- We currently ignore directories
-                        | otherwise = dropWhile isPathSeparator <$> stripPrefix dir file
+    relativise dir file = dropWhile isPathSeparator <$> stripPrefix dir file
