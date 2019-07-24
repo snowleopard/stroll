@@ -58,9 +58,10 @@ decodeFSATraces dir = foldr decode Map.empty
         FSAMove d s -> error ("Moving files not supported: " ++ s ++ " => " ++ d)
     add :: (Maybe Hash -> Operation) -> FilePath -> Operations -> Operations
     add c file ops = case relativise dir file of
-        Nothing   -> ops -- skip files outside the root directory
+        Nothing   -> ops -- Skip files outside the root directory
         Just path -> case Map.lookup path ops of
             Just (Write _) -> ops -- Write's are final
             _              -> Map.insert path (c Nothing) ops
     relativise :: FilePath -> FilePath -> Maybe FilePath
-    relativise dir file = dropWhile isPathSeparator <$> stripPrefix dir file
+    relativise dir file | null (takeFileName file) = Nothing -- We currently ignore directories
+                        | otherwise = dropWhile isPathSeparator <$> stripPrefix dir file
