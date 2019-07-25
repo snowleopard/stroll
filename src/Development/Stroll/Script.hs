@@ -55,12 +55,12 @@ decodeFSATraces dir = foldrM decode Map.empty
         FSAQuery  f -> add Read  f
         FSAWrite  f -> add Write f
         FSADelete f -> add Write f
-        FSATouch  f -> add Write f
+        FSATouch  f -> add Read  f -- This is a bit of a hack, should be Write
         FSAMove d s -> error ("Moving files not supported: " ++ s ++ " => " ++ d)
     add :: (Maybe Hash -> Operation) -> FilePath -> Operations -> IO Operations
     add c file ops = do
         isDir <- doesDirectoryExist file
-        return $ if isDir 
+        return $ if isDir
             then ops -- We currently ignore directories
             else case relativise dir file of
                 Nothing   -> ops -- Ignore files outside the root directory

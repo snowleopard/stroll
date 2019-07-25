@@ -1,4 +1,4 @@
-module Development.Stroll (stroll, graph, info, execute, reset) where
+module Development.Stroll (stroll, graph, info, step, reset) where
 
 import Algebra.Graph
 import Algebra.Graph.Export.Dot
@@ -45,17 +45,19 @@ getStatus script = do
               where
                 result = if exitCode t == ExitSuccess then UpToDate else Error
 
+step :: FilePath -> IO ()
+step script = do
+    putStrLn ("Executing " ++ script ++ "...")
+    hFlush stdout
+    void (execute script)
+
 stroll :: FilePath -> IO ()
 stroll dir = do
     scripts  <- getScripts dir
     statuses <- sequence [ (s,) <$> getStatus s | s <- scripts ]
     let outOfDate = filter ((==OutOfDate) . snd) statuses
     case outOfDate of
-        ((script,_):_) -> do
-            putStrLn ("Executing " ++ script ++ "...")
-            hFlush stdout
-            void (execute script)
-            stroll dir
+        ((script,_):_) -> step script >> stroll dir
         _ -> do
             let failed = filter ((==Error) . snd) statuses
             forM_ failed $ \(script,_) ->
@@ -68,7 +70,7 @@ info dir = do
     forM_ scripts $ \script -> do
         status <- getStatus script
         putStrLn $ prettyStatus status ++ " " ++ script
-    
+
 type DependencyGraph = Graph (Either FilePath Script)
 
 -- | Build a dependency graph using the information available in @.stroll@ files.
@@ -78,7 +80,7 @@ dependencyGraph dir = do
     parts <- forM scripts $ \script -> do
         let stroll = script <.> "stroll"
         exists <- doesFileExist stroll
-        if not exists then return (vertex $ Left script) else do
+        if not exists then return (vertex $ Right script) else do
             trace <- B.readFile stroll
             return $ case decodeEither' trace of
                 Left err -> error (show err) -- Maybe return a vertex?
