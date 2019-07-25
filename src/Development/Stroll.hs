@@ -2,6 +2,7 @@ module Development.Stroll (stroll, graph, info, step, reset) where
 
 import Algebra.Graph
 import Algebra.Graph.Export.Dot
+import Algebra.Graph.ToGraph
 import Control.Monad
 import Data.Bool
 import Data.Either
@@ -94,7 +95,10 @@ graph :: FilePath -> IO ()
 graph dir = do
     scripts  <- getScripts dir
     statuses <- sequence [ (Right s,) <$> getStatus s | s <- scripts ]
-    let statusMap     = Map.fromList statuses
+    graph    <- dependencyGraph dir
+    let outOfDate  = [ x | (x, OutOfDate) <- statuses ]
+        transitive = dfs outOfDate graph
+    let statusMap     = Map.fromList (statuses ++ map (, OutOfDate) transitive)
         isUpToDate  x = Map.lookup x statusMap == Just UpToDate
         isOutOfDate x = Map.lookup x statusMap == Just OutOfDate
         isError     x = Map.lookup x statusMap == Just Error
@@ -109,7 +113,6 @@ graph dir = do
                                     ++ [ "fillcolor" := "#d1ffd8" | isUpToDate  x ]
                                     ++ [ "fillcolor" := "#fcd2ae" | isOutOfDate x ]
                                     ++ [ "fillcolor" := "#e0c3c5" | isError     x ] }
-    graph <- dependencyGraph dir
     putStrLn $ export style graph
 
 reset :: FilePath -> IO ()
