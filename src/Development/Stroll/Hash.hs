@@ -12,7 +12,7 @@ import qualified Data.ByteString as B
 
 -- | A SHA-256 hash used for efficient comparison and indexing of file contents.
 newtype Hash = Hash { getHash :: Crypto.Digest Crypto.SHA256 }
-    deriving Eq
+    deriving (Eq, Ord)
 
 instance Show Hash where
     show = show . toByteString

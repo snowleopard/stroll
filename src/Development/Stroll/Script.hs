@@ -28,7 +28,7 @@ type Script = FilePath
 execute :: Script -> IO Trace
 execute script = do
     exists <- doesFileExist script
-    unless exists $ error ("Script not found: " ++ script)
+    unless exists $ error ("Script not found: " ++ toStandard script)
     (Exit code, StdoutTrim out, Stderr err, fsatraces) <- cmd Shell script
     cwd <- getCurrentDirectory
     ops <- Map.traverseWithKey updateHash =<< decodeFSATraces cwd fsatraces
@@ -55,17 +55,19 @@ decodeFSATraces dir = foldrM decode Map.empty
         FSAQuery  f -> add Read  f
         FSAWrite  f -> add Write f
         FSADelete f -> add Write f
-        FSATouch  f -> add Read  f -- This is a bit of a hack, should be Write
+        FSATouch  f -> add Write f
         FSAMove d s -> error ("Moving files not supported: " ++ s ++ " => " ++ d)
     add :: (Maybe Hash -> Operation) -> FilePath -> Operations -> IO Operations
     add c file ops = do
         isDir <- doesDirectoryExist file
         return $ if isDir
             then ops -- We currently ignore directories
-            else case relativise dir file of
+            else case relativise (toStandard dir) (toStandard file) of
                 Nothing   -> ops -- Ignore files outside the root directory
                 Just path -> case Map.lookup path ops of
                     Just (Write _) -> ops -- A Write cannot turn into a Read
                     _              -> Map.insert path (c Nothing) ops
     relativise :: FilePath -> FilePath -> Maybe FilePath
-    relativise dir file = dropWhile isPathSeparator <$> stripPrefix dir file
+    relativise dir file
+        | isRelative file = Just file
+        | otherwise       = dropWhile isPathSeparator <$> stripPrefix dir file

@@ -18,6 +18,7 @@ import System.IO
 
 import qualified Data.ByteString as B
 import qualified Data.Map        as Map
+import qualified Data.Set        as Set
 
 getScripts :: FilePath -> IO [Script]
 getScripts dir = do
@@ -34,6 +35,16 @@ prettyStatus UpToDate  = "[ up-to-date]"
 prettyStatus OutOfDate = "[out-of-date]"
 prettyStatus Error     = "[   error   ]"
 
+getTrace :: Script -> IO (Maybe Trace)
+getTrace script = do
+    let stroll = script <.> "stroll"
+    exists <- doesFileExist stroll
+    if not exists then return Nothing else do
+        trace <- B.readFile stroll
+        return $ case decodeEither' trace of
+            Left  _ -> Nothing
+            Right t -> Just t
+
 getStatus :: Script -> IO Status
 getStatus script = do
     let stroll = script <.> "stroll"
@@ -48,7 +59,7 @@ getStatus script = do
 
 step :: FilePath -> IO ()
 step script = do
-    putStrLn ("Executing " ++ script ++ "...")
+    putStrLn ("Executing " ++ toStandard script ++ "...")
     hFlush stdout
     void (execute script)
 
@@ -62,7 +73,7 @@ stroll dir = do
         _ -> do
             let failed = filter ((==Error) . snd) statuses
             forM_ failed $ \(script,_) ->
-                putStrLn ("Script " ++ script ++ " has failed.")
+                putStrLn ("Script " ++ toStandard script ++ " has failed.")
             putStrLn "Done"
 
 info :: FilePath -> IO ()
@@ -94,17 +105,21 @@ dependencyGraph dir = do
 graph :: FilePath -> IO ()
 graph dir = do
     scripts  <- getScripts dir
-    statuses <- sequence [ (Right s,) <$> getStatus s | s <- scripts ]
+    statuses <- sequence [      (Right s,) <$> getStatus s | s <- scripts ]
+    traces   <- sequence [ fmap (Right s,) <$> getTrace  s | s <- scripts ]
+    misses   <- sequence [ (s,) <$> traceMisses t hashFile | Just (s, t) <- traces ]
     graph    <- dependencyGraph dir
-    let outOfDate  = [ x | (x, OutOfDate) <- statuses ]
-        transitive = dfs outOfDate graph
-    let statusMap     = Map.fromList (statuses ++ map (, OutOfDate) transitive)
+    let outOfDate     = [ x | (x, OutOfDate) <- statuses ]
+        transitive    = dfs outOfDate graph
+        mismatches    = Set.fromList [ (Left f, s) | (s, fs) <- misses, (f, _) <- fs ]
+        statusMap     = Map.fromList (statuses ++ map (, OutOfDate) transitive)
         isUpToDate  x = Map.lookup x statusMap == Just UpToDate
         isOutOfDate x = Map.lookup x statusMap == Just OutOfDate
         isError     x = Map.lookup x statusMap == Just Error
-        style = defaultStyleViaShow
+        mismatch x y  = Set.member (min x y, max x y) mismatches
+        style = (defaultStyleViaShow :: Style (Either FilePath FilePath) String)
             { graphName  = dir
-            , preamble   = [ "node [fontname = consolas, shape = box];" ]
+            , preamble   = [ "node [fontname = consolas, shape = box]" ]
             , vertexName = \case
                 Left file    -> toStandard file
                 Right script -> takeBaseName script
@@ -112,7 +127,8 @@ graph dir = do
                                     ++ [ "style"     := "filled"  | isRight     x ]
                                     ++ [ "fillcolor" := "#d1ffd8" | isUpToDate  x ]
                                     ++ [ "fillcolor" := "#fcd2ae" | isOutOfDate x ]
-                                    ++ [ "fillcolor" := "#e0c3c5" | isError     x ] }
+                                    ++ [ "fillcolor" := "#e0c3c5" | isError     x ]
+            , edgeAttributes = \x y -> [ "style"     := "dashed"  | mismatch x y  ] }
     putStrLn $ export style graph
 
 reset :: FilePath -> IO ()

@@ -3,7 +3,7 @@ module Development.Stroll.Trace where
 
 import Development.Stroll.Hash
 
-import Control.Selective (allS)
+import Control.Monad
 import Data.Map (Map)
 import Data.Text (Text, pack, unpack)
 import Data.Yaml
@@ -28,7 +28,7 @@ The current model allows only two basic operations for the sake of simplicity.
   examples are temporary files, and build artefacts deleted by clean up scripts.
 
 -}
-data Operation = Read (Maybe Hash) | Write (Maybe Hash) deriving (Eq, Show)
+data Operation = Read (Maybe Hash) | Write (Maybe Hash) deriving (Eq, Ord, Show)
 
 type Operations = Map FilePath Operation
 
@@ -73,9 +73,15 @@ instance FromJSON Trace where
 -- trace is /up-to-date/, that is, the contents of all files in the trace
 -- matches the recorded hashes.
 upToDate :: Trace -> (FilePath -> IO (Maybe Hash)) -> IO Bool
-upToDate Trace{..} fetchHash = allS match (Map.toList operations)
+upToDate trace fetchHash = null <$> traceMisses trace fetchHash
+
+-- | Given a build 'Trace', and a function to compute the 'Hash' of a file
+-- contents (or 'Nothing' if the file does not exist), return a list of files
+-- whose contents does not match the hashes recorded in the trace.
+traceMisses :: Trace -> (FilePath -> IO (Maybe Hash)) -> IO [(FilePath, Operation)]
+traceMisses Trace{..} fetchHash = filterM miss (Map.toList operations)
   where
-    match :: (FilePath, Operation) -> IO Bool
-    match (file, operation) = (== value) <$> fetchHash file
+    miss :: (FilePath, Operation) -> IO Bool
+    miss (file, operation) = (/= value) <$> fetchHash file
       where
         value = case operation of { Read v -> v; Write v -> v }
