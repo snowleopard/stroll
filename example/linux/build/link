@@ -1,3 +1,0 @@
-#!/bin/bash
-
-ghc bin/Main.o -o bin/HelloWorld

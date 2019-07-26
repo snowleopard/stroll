@@ -1,5 +1,4 @@
 #!/bin/bash
 
-rm bin/Main.hi
-rm bin/Main.o
-rm bin/HelloWorld
+rm bin/lib/lib.o
+rm bin/main.exe
