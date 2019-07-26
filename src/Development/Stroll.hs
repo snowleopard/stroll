@@ -123,12 +123,13 @@ graph dir = do
             , vertexName = \case
                 Left file    -> toStandard file
                 Right script -> takeBaseName script
-            , vertexAttributes = \x -> [ "style"     := "rounded" | isLeft      x ]
-                                    ++ [ "style"     := "filled"  | isRight     x ]
-                                    ++ [ "fillcolor" := "#d1ffd8" | isUpToDate  x ]
-                                    ++ [ "fillcolor" := "#fcd2ae" | isOutOfDate x ]
-                                    ++ [ "fillcolor" := "#e0c3c5" | isError     x ]
-            , edgeAttributes = \x y -> [ "style"     := "dashed"  | mismatch x y  ] }
+            , vertexAttributes = \x -> [ "style"       := "rounded" | isLeft      x ]
+                                    ++ [ "style"       := "filled"  | isRight     x ]
+                                    ++ [ "fillcolor"   := "#d1ffd8" | isUpToDate  x ]
+                                    ++ [ "fillcolor"   := "#fcd2ae" | isOutOfDate x ]
+                                    ++ [ "fillcolor"   := "#e0c3c5" | isError     x ]
+                                    ++ [ "peripheries" := "2"       | isError     x ]
+            , edgeAttributes = \x y -> [ "style"       := "dashed"  | mismatch x y  ] }
     putStrLn $ export style graph
 
 reset :: FilePath -> IO ()
