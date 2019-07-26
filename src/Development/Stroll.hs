@@ -20,6 +20,7 @@ import qualified Data.ByteString as B
 import qualified Data.Map        as Map
 import qualified Data.Set        as Set
 
+-- | Get a list of build scripts in a directory.
 getScripts :: FilePath -> IO [Script]
 getScripts dir = do
     files <- getDirectoryFilesIO "" [dir <//> "*"]
@@ -28,13 +29,7 @@ getScripts dir = do
     notStroll :: FilePath -> Bool
     notStroll f = takeExtension f `notElem` [".stroll", ".stdout", ".stderr"]
 
-data Status = UpToDate | OutOfDate | Error deriving (Eq, Ord, Show)
-
-prettyStatus :: Status -> String
-prettyStatus UpToDate  = "[ up-to-date]"
-prettyStatus OutOfDate = "[out-of-date]"
-prettyStatus Error     = "[   error   ]"
-
+-- | Get a script's build trace if it exists and can be parsed successfully.
 getTrace :: Script -> IO (Maybe Trace)
 getTrace script = do
     let stroll = script <.> "stroll"
@@ -45,6 +40,15 @@ getTrace script = do
             Left  _ -> Nothing
             Right t -> Just t
 
+-- | A build task's 'Status' is one of:
+-- * 'UpToDate' if its input and output dependencies match the recorded trace.
+-- * 'OutOfDate' if at least one input or output dependency doesn't match the
+--   recorded trace, or if the trace does not exist.
+-- * 'Error' if the task failed during the previous execution.
+data Status = UpToDate | OutOfDate | Error deriving (Eq, Ord, Show)
+
+-- | Compute a script's 'Status'. This function fails with an error if there is
+-- a matching trace but it cannot be parsed.
 getStatus :: Script -> IO Status
 getStatus script = do
     let stroll = script <.> "stroll"
@@ -57,12 +61,16 @@ getStatus script = do
               where
                 result = if exitCode t == ExitSuccess then UpToDate else Error
 
-step :: FilePath -> IO ()
+-- | Execute a script regardles of its current 'Status' and record the resulting
+-- 'Trace'.
+step :: Script -> IO ()
 step script = do
     putStrLn ("Executing " ++ toStandard script ++ "...")
     hFlush stdout
     void (execute script)
 
+-- | Stroll a given build directory by sequentially building the tasks that are
+-- not up-to-date, trying to minimise the number of script executions.
 stroll :: FilePath -> IO ()
 stroll dir = do
     scripts  <- getScripts dir
@@ -76,16 +84,24 @@ stroll dir = do
                 putStrLn ("Script " ++ toStandard script ++ " has failed.")
             putStrLn "Done"
 
+-- | Print out the status information about all build scripts in a directory.
 info :: FilePath -> IO ()
 info dir = do
     scripts <- getScripts dir
     forM_ scripts $ \script -> do
         status <- getStatus script
-        putStrLn $ prettyStatus status ++ " " ++ script
+        putStrLn (toStandard script ++ prettyStatus status)
+  where
+    prettyStatus :: Status -> String
+    prettyStatus UpToDate  = " [up-to-date]"
+    prettyStatus OutOfDate = " [out-of-date]"
+    prettyStatus Error     = " [error]"
 
+-- TODO: Switch to bipartite graphs.
+-- | A dependency graph whose nodes are files and build scripts.
 type DependencyGraph = Graph (Either FilePath Script)
 
--- | Build a dependency graph using the information available in @.stroll@ files.
+-- | Compute a dependency graph using the information in recorded traces.
 dependencyGraph :: FilePath -> IO DependencyGraph
 dependencyGraph dir = do
     scripts <- getScripts dir
@@ -102,6 +118,9 @@ dependencyGraph dir = do
                     toEdge (file, Write _) = (Right script, Left file)
     return (overlays parts)
 
+-- | Print out build dependency graph for all build scripts in a directory in
+-- the DOT file format. You can redirect the output to the @dot@ utility for
+-- rendering an image.
 graph :: FilePath -> IO ()
 graph dir = do
     scripts  <- getScripts dir
@@ -132,5 +151,6 @@ graph dir = do
             , edgeAttributes = \x y -> [ "style"       := "dashed"  | mismatch x y  ] }
     putStrLn $ export style graph
 
+-- | Reset a given build directory by removing all files computed by Stroll.
 reset :: FilePath -> IO ()
 reset dir = removeFiles dir ["//*.stroll", "//*.stderr", "//*.stdout"]

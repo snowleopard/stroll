@@ -30,6 +30,7 @@ The current model allows only two basic operations for the sake of simplicity.
 -}
 data Operation = Read (Maybe Hash) | Write (Maybe Hash) deriving (Eq, Ord, Show)
 
+-- | 'Operations' is just a map from a file to a recorded operation.
 type Operations = Map FilePath Operation
 
 instance ToJSON Operation where

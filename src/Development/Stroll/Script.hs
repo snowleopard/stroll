@@ -15,6 +15,7 @@ import System.Directory
 import qualified Data.ByteString as B
 import qualified Data.Map        as Map
 
+-- | 'Script' is currently just a synonym for 'FilePath'.
 type Script = FilePath
 
 -- | Execute a specified script, return the resulting 'Trace', and update
@@ -46,6 +47,13 @@ execute script = do
         | B.null contents = whenS (doesFileExist file) (removeFile file)
         | otherwise       = B.writeFile file contents
 
+-- | Decode 'Operations' relative to a given directory from an 'FSATrace' list.
+-- We filter out accesses to files outside of the project because otherwise we
+-- would have to track hundreds of files corresponding to compiler executables,
+-- various standard libraries, etc. As an example, compiling a "Hello, World"
+-- program using GHC reads 1031 files (some multiple times), writes 27 files,
+-- and deletes 18 files on my machine. This may be more than you expected, e.g.
+-- see: https://twitter.com/andreymokhov/status/1125171055214116864.
 decodeFSATraces :: FilePath -> [FSATrace] -> IO Operations
 decodeFSATraces dir = foldrM decode Map.empty
   where

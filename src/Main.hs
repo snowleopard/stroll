@@ -2,12 +2,7 @@ import Development.Stroll
 import System.Directory
 import System.Environment
 
--- Compiling hello world:
--- reads: 1031
--- writes: 27
--- deletes: 18
--- Set size : 431
-
+-- TODO: Switch to a proper command line flags parser.
 main :: IO ()
 main = do
     args <- getArgs
