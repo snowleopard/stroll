@@ -15,13 +15,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
         ghc: ['8.10']
-        include:
-        - os: windows-latest
-          ghc: ['8.10']
-        - os: macOS-latest
-          ghc: ['8.10']
 
     steps:
     - run: git config --global core.autocrlf false
