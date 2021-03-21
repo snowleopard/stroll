@@ -4,7 +4,7 @@ import Control.Selective
 import Control.Monad
 import Data.ByteString (ByteString)
 import Data.Foldable (foldrM)
-import Data.List
+import Data.List (stripPrefix)
 import Data.Yaml
 import Development.Shake.Command
 import Development.Shake.FilePath
@@ -54,10 +54,10 @@ execute script = do
 -- program using GHC reads 1031 files (some multiple times), writes 27 files,
 -- and deletes 18 files on my machine. This may be more than you expected, e.g.
 -- see: https://twitter.com/andreymokhov/status/1125171055214116864.
-decodeFSATraces :: FilePath -> [FSATrace] -> IO Operations
+decodeFSATraces :: FilePath -> [FSATrace FilePath] -> IO Operations
 decodeFSATraces dir = foldrM decode Map.empty
   where
-    decode :: FSATrace -> Operations -> IO Operations
+    decode :: FSATrace FilePath -> Operations -> IO Operations
     decode t = case t of
         FSARead   f -> add Read  f
         FSAQuery  f -> add Read  f
