@@ -7,7 +7,7 @@ import Control.Monad
 import Data.Bool
 import Data.Either
 import Data.Yaml
-import Development.Shake hiding (doesFileExist)
+import Development.Shake ((<//>), getDirectoryFilesIO, removeFiles)
 import Development.Shake.FilePath
 import Development.Stroll.Hash
 import Development.Stroll.Script
