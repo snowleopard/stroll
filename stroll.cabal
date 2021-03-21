@@ -59,10 +59,8 @@ executable stroll
     default-extensions: LambdaCase,
                         ScopedTypeVariables,
                         TupleSections
-    hs-source-dirs:     src
+    hs-source-dirs:     app
     main-is:            Main.hs
-    other-modules:      Development.Stroll
-                        Development.Stroll.Hash
-                        Development.Stroll.Script
-                        Development.Stroll.Trace
-    build-depends:      stroll
+    build-depends:      base                 >= 4.7     && < 5,
+                        directory            >= 1.2.2.0 && < 1.4,
+                        stroll
