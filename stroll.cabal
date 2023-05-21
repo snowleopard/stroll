@@ -5,13 +5,13 @@ license:       MIT
 license-file:  LICENSE
 author:        Andrey Mokhov <andrey.mokhov@gmail.com>, github: @snowleopard
 maintainer:    Andrey Mokhov <andrey.mokhov@gmail.com>, github: @snowleopard
-copyright:     Andrey Mokhov, 2019-2021
+copyright:     Andrey Mokhov, 2019-2023
 homepage:      https://github.com/snowleopard/stroll
 bug-reports:   https://github.com/snowleopard/stroll/issues
 category:      Algorithms, Development
 build-type:    Simple
 cabal-version: 1.18
-tested-with:   GHC==9.0, GHC==8.10
+tested-with:   GHC==9.6.1, GHC==9.4.4, GHC==9.2.7, GHC==9.0.2, GHC==8.10.7
 description:   Stroll is an experiment in developing a /zero configuration/
                build system that does not require the user to specify any
                dependencies between individual build tasks.
