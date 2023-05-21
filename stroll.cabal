@@ -37,7 +37,7 @@ library
                         cryptonite           >= 0.23    && < 0.30,
                         directory            >= 1.2.2.0 && < 1.4,
                         filepath             >= 1.4     && < 1.5,
-                        memory               >= 0.15    && < 0.17,
+                        memory               >= 0.15    && < 0.19,
                         selective            >= 0.4     && < 0.5,
                         shake                >= 0.19    && < 0.20,
                         text                 >= 0.11.1  && < 1.3,
