@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings, RecordWildCards #-}
 module Development.Stroll.Trace where
 
 import Development.Stroll.Hash
@@ -7,11 +7,11 @@ import Control.Monad
 import Data.Map (Map)
 import Data.Text (Text, pack, unpack)
 import Data.Yaml
+import GHC.Generics
 import System.Exit
 import Text.Read
 
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Map            as Map
+import qualified Data.Map as Map
 
 {-| Stroll records file-system operations performed while executing a script.
 
@@ -28,24 +28,14 @@ The current model allows only two basic operations for the sake of simplicity.
   examples are temporary files, and build artefacts deleted by clean up scripts.
 
 -}
-data Operation = Read (Maybe Hash) | Write (Maybe Hash) deriving (Eq, Ord, Show)
+data Operation = Read (Maybe Hash) | Write (Maybe Hash)
+    deriving (Eq, Generic, Ord, Show)
 
 -- | 'Operations' is just a map from a file to a recorded operation.
 type Operations = Map FilePath Operation
 
-instance ToJSON Operation where
-    toJSON (Read  contents) = object ["read"  .= toJSON (toText <$> contents)]
-    toJSON (Write contents) = object ["write" .= toJSON (toText <$> contents)]
-
-instance FromJSON Operation where
-    parseJSON = withObject "Operation" $ \o ->
-        if HashMap.size o /= 1
-        then fail "Exactly one operation expected"
-        else case HashMap.lookup "read" o of
-            Just value -> Read <$> parseJSON value
-            Nothing    -> case HashMap.lookup "write" o of
-                Just value -> Write <$> parseJSON value
-                Nothing    -> fail "Unknown operation"
+instance ToJSON   Operation
+instance FromJSON Operation
 
 -- | A 'Trace' is recorded after executing a build 'Script'. Thanks to the
 -- 'FromJSON' and 'ToJSON' instances, you can easily serialise and deserialise
