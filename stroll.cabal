@@ -30,7 +30,8 @@ library
                         Development.Stroll.Hash
                         Development.Stroll.Script
                         Development.Stroll.Trace
-    build-depends:      algebraic-graphs     >= 0.7     && < 0.8,
+    build-depends:      aeson                >= 2.1     && < 2.2,
+                        algebraic-graphs     >= 0.7     && < 0.8,
                         base                 >= 4.7     && < 5,
                         bytestring           >= 0.9.2.1 && < 0.12,
                         containers           >= 0.5.7.1 && < 7,
