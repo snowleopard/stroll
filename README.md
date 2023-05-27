@@ -14,6 +14,9 @@ occasionally until you've built up a complete mental map of the park.
 
 See an introductory blog post here: https://blogs.ncl.ac.uk/andreymokhov/stroll/.
 
+There is also a short abstract presented at the IFL 2021 conference:
+[video](https://www.youtube.com/watch?v=OTc8hLds800).
+
 ## How to try
 
 First, build and install Stroll, e.g. using Stack:
