@@ -129,7 +129,7 @@ graph dir = do
     misses   <- sequence [ (s,) <$> traceMisses t hashFile | Just (s, t) <- traces ]
     graph    <- dependencyGraph dir
     let outOfDate     = [ x | (x, OutOfDate) <- statuses ]
-        transitive    = dfs outOfDate graph
+        transitive    = dfs graph outOfDate
         mismatches    = Set.fromList [ (Left f, s) | (s, fs) <- misses, (f, _) <- fs ]
         statusMap     = Map.fromList (statuses ++ map (, OutOfDate) transitive)
         isUpToDate  x = Map.lookup x statusMap == Just UpToDate

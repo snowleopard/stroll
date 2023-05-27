@@ -1,6 +1,6 @@
 # Stroll
 
-[![Build status](https://img.shields.io/github/workflow/status/snowleopard/stroll/ci.svg)](https://github.com/snowleopard/stroll/actions)
+[![Build status](https://img.shields.io/github/actions/workflow/status/snowleopard/stroll/ci.yml?branch=master)](https://github.com/snowleopard/stroll/actions)
 
 Stroll is an experiment in developing a language-agnostic build system that does
 not require the user to specify dependencies between individual build tasks. By "language-agnostic" I mean the user does not need to learn a new language or

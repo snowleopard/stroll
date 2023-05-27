@@ -10,8 +10,8 @@ import Data.Yaml
 import System.Exit
 import Text.Read
 
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Map            as Map
+import qualified Data.Map          as Map
+import qualified Data.Aeson.KeyMap as KeyMap
 
 {-| Stroll records file-system operations performed while executing a script.
 
@@ -38,12 +38,12 @@ instance ToJSON Operation where
     toJSON (Write contents) = object ["write" .= toJSON (toText <$> contents)]
 
 instance FromJSON Operation where
-    parseJSON = withObject "Operation" $ \o ->
-        if HashMap.size o /= 1
+    parseJSON = withObject "Operation" $ \(o :: Object) ->
+        if KeyMap.size o /= 1
         then fail "Exactly one operation expected"
-        else case HashMap.lookup "read" o of
+        else case KeyMap.lookup "read" o of
             Just value -> Read <$> parseJSON value
-            Nothing    -> case HashMap.lookup "write" o of
+            Nothing    -> case KeyMap.lookup "write" o of
                 Just value -> Write <$> parseJSON value
                 Nothing    -> fail "Unknown operation"
 
